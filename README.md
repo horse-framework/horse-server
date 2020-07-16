@@ -6,6 +6,12 @@ Only use Twino Server directly if you develop new protocol extension for twino s
 
 If you are looking for Messaging Queue Server, HTTP Server with MVC Architecture, WebSocket Server/Client or IOC Library, you can check other repositories of Twino Framework.
 
+## NuGet Packages
+
+**[Twino Server](https://www.nuget.org/packages/Twino.Server)**<br>
+**[Twino Core Module](https://www.nuget.org/packages/Twino.Core)**<br>
+**[Client Connector Library](https://www.nuget.org/packages/Twino.Client.Connectors)**<br>
+
 
 ### Usage
 
