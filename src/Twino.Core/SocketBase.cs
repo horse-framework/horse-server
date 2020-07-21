@@ -78,6 +78,13 @@ namespace Twino.Core
         /// </summary>
         internal bool PongRequired { get; set; }
 
+        /// <summary>
+        /// When true, If socket sends or receives messages in last ping interval duration, sending PING messages is discarded.
+        /// When false, PING messages are sent always.
+        /// Default value is true.
+        /// </summary>
+        public bool SmartHealthCheck { get; set; } = true;
+
         #endregion
 
         #region Constructors
