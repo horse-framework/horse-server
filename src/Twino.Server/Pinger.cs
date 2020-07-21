@@ -141,7 +141,7 @@ namespace Twino.Server
                     continue;
                 }
 
-                if (socket.LastAliveDate + _interval > DateTime.UtcNow)
+                if (socket.SmartHealthCheck && socket.LastAliveDate + _interval > DateTime.UtcNow)
                 {
                     if (socket.PongRequired)
                         socket.PongRequired = false;
