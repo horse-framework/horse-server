@@ -1,16 +1,12 @@
 
 # Twino Server
 
+[![NuGet](https://img.shields.io/nuget/v/Twino.Server)](https://www.nuget.org/packages/Twino.Server)
+
 Twino Server is a TCP Server and includes Core modules for Twino Framework Libraries.
 Only use Twino Server directly if you develop new protocol extension for twino server.
 
 If you are looking for Messaging Queue Server, HTTP Server with MVC Architecture, WebSocket Server/Client or IOC Library, you can check other repositories of Twino Framework.
-
-## NuGet Packages
-
-**[Twino Server](https://www.nuget.org/packages/Twino.Server)**<br>
-**[Twino Core Module](https://www.nuget.org/packages/Twino.Core)**<br>
-**[Client Connector Library](https://www.nuget.org/packages/Twino.Client.Connectors)**<br>
 
 
 ### Usage
@@ -41,3 +37,10 @@ UseWebSockets is an extension method. If you need to add another protocol, you c
     
     server.UseProtocol(new CustomProtocol());
     
+
+
+## Thanks
+
+Thanks to JetBrains for a open source license to use on this project.
+
+[![jetbrains](https://user-images.githubusercontent.com/21208762/90192662-10043700-ddcc-11ea-9533-c43b99801d56.png)](https://www.jetbrains.com/?from=twino-framework)
