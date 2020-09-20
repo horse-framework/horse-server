@@ -309,7 +309,7 @@ namespace Twino.Core
         /// Sends pong
         /// </summary>
         /// <returns></returns>
-        public abstract void Pong();
+        public abstract void Pong(object pingMessage = null);
 
         #endregion
     }
