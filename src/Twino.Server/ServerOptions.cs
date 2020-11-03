@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 namespace Twino.Server
@@ -65,7 +64,7 @@ namespace Twino.Server
                 return CreateDefault();
 
             string serialized = File.ReadAllText(filename);
-            ServerOptions options = JsonConvert.DeserializeObject<ServerOptions>(serialized);
+            ServerOptions options = System.Text.Json.JsonSerializer.Deserialize<ServerOptions>(serialized);
 
             if (options.RequestTimeout == 0)
                 options.RequestTimeout = 120;
