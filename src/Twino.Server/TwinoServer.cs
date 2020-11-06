@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Mime;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -77,6 +78,8 @@ namespace Twino.Server
         /// </summary>
         public event Action<TwinoServer> OnStopped;
 
+        private TaskCompletionSource<object> _runAwaiter;
+
         #endregion
 
         #region Constructors
@@ -116,6 +119,7 @@ namespace Twino.Server
         /// <summary>
         /// Block main thread, typical thread sleep
         /// </summary>
+        [Obsolete("Use Run method instead")]
         public void BlockWhileRunning()
         {
             while (IsRunning)
@@ -125,10 +129,43 @@ namespace Twino.Server
         /// <summary>
         /// Block main thread, typical task delay
         /// </summary>
+        [Obsolete("Use Run method instead")]
         public async Task BlockWhileRunningAsync()
         {
             while (IsRunning)
                 await Task.Delay(250);
+        }
+
+        /// <summary>
+        /// Starts server on a specific port and waits until it stops
+        /// </summary>
+        public void Run()
+        {
+            Run(0);
+        }
+
+        /// <summary>
+        /// Starts server and waits until it stops
+        /// </summary>
+        public void Run(int port)
+        {
+            if (port == 0)
+                Start();
+            else
+                Start(port);
+            
+            _runAwaiter = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            
+            OnStopped += s =>
+            {
+                if (_runAwaiter != null)
+                {
+                    _runAwaiter.TrySetResult(null);
+                    _runAwaiter = null;
+                }
+            };
+            
+            _runAwaiter.Task.GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -139,10 +176,10 @@ namespace Twino.Server
         {
             Options.Hosts = new List<HostOptions>();
             HostOptions host = new HostOptions
-            {
-                Port = port,
-                SslEnabled = false
-            };
+                               {
+                                   Port = port,
+                                   SslEnabled = false
+                               };
 
             Options.Hosts.Add(host);
 
@@ -159,7 +196,9 @@ namespace Twino.Server
 
             if (Options.Hosts == null || Options.Hosts.Count == 0)
                 throw new ArgumentNullException($"Hosts", "There is no host to listen. Add hosts to Twino Options");
-
+            
+            AppDomain.CurrentDomain.ProcessExit += (sender, args) => OnStopped?.Invoke(this);
+            
             if (_timeTimer != null)
             {
                 _timeTimer.Stop();
