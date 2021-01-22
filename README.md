@@ -4,14 +4,14 @@
 [![NuGet](https://img.shields.io/nuget/v/Horse.Server)](https://www.nuget.org/packages/Horse.Server)
 
 Horse Server is a TCP Server and includes Core modules for Horse Framework Libraries.
-Only use Horse Server directly if you develop new protocol extension for twino server.
+Only use Horse Server directly if you develop new protocol extension for horse server.
 
 If you are looking for Messaging Queue Server, HTTP Server with MVC Architecture, WebSocket Server/Client or IOC Library, you can check other repositories of Horse Framework.
 
 
 ### Usage
 
-HorseServer is an object, accepts TCP requests and finds the protocol which accepts the request. Here is a quick example which is used for accepting websocket connections used in twino websocket library.
+HorseServer is an object, accepts TCP requests and finds the protocol which accepts the request. Here is a quick example which is used for accepting websocket connections used in horse websocket library.
 
     public class ServerWsHandler : IProtocolConnectionHandler<WsServerSocket, WebSocketMessage>
     {
