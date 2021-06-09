@@ -208,6 +208,13 @@ namespace Horse.Server
             IsRunning = true;
             _handlers = new List<ConnectionHandler>();
 
+            //if websocket ping is activated, starts pinger
+            if (Options.PingInterval > 0)
+            {
+                HeartbeatManager = new HeartbeatManager(this, TimeSpan.FromSeconds(Options.PingInterval));
+                HeartbeatManager.Start();
+            }
+
             foreach (HostOptions host in Options.Hosts)
             {
                 HostListener server = new HostListener();
@@ -236,13 +243,7 @@ namespace Horse.Server
             }
 
             IsRunning = true;
-            //if websocket ping is activated, starts pinger
-            if (Options.PingInterval > 0)
-            {
-                HeartbeatManager = new HeartbeatManager(this, TimeSpan.FromSeconds(Options.PingInterval));
-                HeartbeatManager.Start();
-            }
-
+            
             OnStarted?.Invoke(this);
         }
 
