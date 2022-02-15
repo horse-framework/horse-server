@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Horse.Server", "Horse.Serve
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Horse.Core", "Horse.Core\Horse.Core.csproj", "{0326C738-81E5-4A7A-B6AD-CCC9F46F20C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Horse.Client.Connectors", "Horse.Client.Connectors\Horse.Client.Connectors.csproj", "{45EEFCDF-32CE-4317-B720-BB47E192C662}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,9 +18,5 @@ Global
 		{0326C738-81E5-4A7A-B6AD-CCC9F46F20C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0326C738-81E5-4A7A-B6AD-CCC9F46F20C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0326C738-81E5-4A7A-B6AD-CCC9F46F20C3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{45EEFCDF-32CE-4317-B720-BB47E192C662}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{45EEFCDF-32CE-4317-B720-BB47E192C662}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{45EEFCDF-32CE-4317-B720-BB47E192C662}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{45EEFCDF-32CE-4317-B720-BB47E192C662}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
