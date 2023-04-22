@@ -48,6 +48,15 @@ namespace Horse.Server
                 try
                 {
                     TcpClient tcp = await _listener.Listener.AcceptTcpClientAsync();
+                    tcp.NoDelay = _server.Options.NoDelay;
+
+                    if (_server.Options.QuickAck)
+                    {
+                        int SIO_TCP_SET_ACK_FREQUENCY = unchecked((int) 0x98000017);
+                        var outputArray = new byte[128];
+                        tcp.Client.IOControl(SIO_TCP_SET_ACK_FREQUENCY, BitConverter.GetBytes(1), outputArray);
+                    }
+
                     _ = AcceptClient(tcp);
                 }
                 catch (Exception ex)

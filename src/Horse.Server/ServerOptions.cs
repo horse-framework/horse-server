@@ -44,6 +44,16 @@ namespace Horse.Server
         private static readonly string[] OptionsFiles = { "server.json", "horse.json" };
 
         /// <summary>
+        /// True to disable Nagle Algorithm
+        /// </summary>
+        public bool NoDelay { get; set; } = true;
+
+        /// <summary>
+        /// True to disable TCP acknowledge delay
+        /// </summary>
+        public bool QuickAck { get; set; }
+
+        /// <summary>
         /// Finds the filename from supported file list.
         /// If exists, loads options from file.
         /// If not exists, returns default options.
