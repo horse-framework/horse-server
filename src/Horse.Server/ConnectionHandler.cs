@@ -120,9 +120,7 @@ namespace Horse.Server
                         hsresult.PreviouslyRead = pbytes;
                         info.Protocol = protocol;
                         info.Socket = hsresult.Socket;
-
-                        if (info.Socket != null)
-                            info.Socket.SetOnConnected();
+                        info.Socket?.SetOnConnected();
 
                         //if protocol required to send protocol message from server to client, send it
                         if (hsresult.Response != null)

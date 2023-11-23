@@ -21,9 +21,9 @@
         WebSocket,
 
         /// <summary>
-        /// hmq:// or hmqs://
+        /// horse://
         /// </summary>
-        Hmq
+        Horse
     }
 
     /// <summary>

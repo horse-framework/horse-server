@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Mime;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -50,7 +49,7 @@ namespace Horse.Server
         /// <summary>
         /// Server's supported protocols
         /// </summary>
-        internal IHorseProtocol[] Protocols { get; private set; } = new IHorseProtocol[0];
+        internal IHorseProtocol[] Protocols { get; private set; } = Array.Empty<IHorseProtocol>();
 
         //creating string from DateTime object per request uses some cpu and time (1 sec full cpu for 10million times)
         /// <summary>

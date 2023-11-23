@@ -91,13 +91,13 @@ namespace Horse.Core
                         info.SSL = true;
                         break;
 
-                    case "hmq":
-                        info.Protocol = Protocol.Hmq;
+                    case "horse":
+                        info.Protocol = Protocol.Horse;
                         info.SSL = false;
                         break;
 
-                    case "hmqs":
-                        info.Protocol = Protocol.Hmq;
+                    case "horses":
+                        info.Protocol = Protocol.Horse;
                         info.SSL = true;
                         break;
                 }

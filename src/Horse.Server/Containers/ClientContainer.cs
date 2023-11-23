@@ -46,8 +46,7 @@ namespace Horse.Server.Containers
             List<SocketBase> clients = new List<SocketBase>();
 
             lock (Clients)
-                foreach (SocketBase client in Clients)
-                    clients.Add(client);
+                clients = new List<SocketBase>(Clients);
 
             return clients;
         }

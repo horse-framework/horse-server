@@ -200,6 +200,56 @@ namespace Horse.Core
         }
 
         /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
+        public void Send(byte[] data, Action<bool> sendCallback)
+        {
+            try
+            {
+                if (Stream == null || data == null)
+                {
+                    sendCallback(false);
+                    return;
+                }
+
+                if (IsSsl)
+                {
+                    if (_ss == null)
+                        _ss = new SemaphoreSlim(1, 1);
+
+                    _ss.Wait();
+                }
+
+                Stream.BeginWrite(data, 0, data.Length, ar =>
+                {
+                    try
+                    {
+                        if (IsSsl)
+                        {
+                            Stream.EndWrite(ar);
+                            ReleaseSslLock();
+                        }
+                        else
+                            Stream.EndRead(ar);
+
+                        sendCallback(true);
+                    }
+                    catch
+                    {
+                        sendCallback(false);
+                        ReleaseSslLock();
+                        Disconnect();
+                    }
+                }, data);
+            }
+            catch
+            {
+                sendCallback(false);
+                Disconnect();
+            }
+        }
+
+        /// <summary>
         /// Updates socket alive date
         /// </summary>
         public void KeepAlive()
