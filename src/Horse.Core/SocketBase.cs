@@ -161,6 +161,37 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
+        public async ValueTask<bool> SendAsync(ReadOnlyMemory<byte> data)
+        {
+            try
+            {
+                if (Stream == null)
+                {
+                    ReleaseSslLock();
+                    return false;
+                }
+
+                if (IsSsl)
+                    await _ss.WaitAsync().ConfigureAwait(false);
+
+                await Stream.WriteAsync(data).ConfigureAwait(false);
+
+                if (IsSsl)
+                    ReleaseSslLock();
+
+                return true;
+            }
+            catch
+            {
+                ReleaseSslLock();
+                Disconnect();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
         public bool Send(byte[] data)
         {
             try
