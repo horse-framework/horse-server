@@ -49,7 +49,12 @@ namespace Horse.Server
         /// <summary>
         /// Server's supported protocols
         /// </summary>
-        internal IHorseProtocol[] Protocols { get; private set; } = Array.Empty<IHorseProtocol>();
+        internal IHorseProtocol[] Protocols { get; private set; } = [];
+        
+        /// <summary>
+        /// Interceptors are executed for each TCP connection
+        /// </summary>
+        public List<IConnectionInterceptor> ConnectionInterceptors { get; private set; } = new List<IConnectionInterceptor>();
 
         //creating string from DateTime object per request uses some cpu and time (1 sec full cpu for 10million times)
         /// <summary>
@@ -122,7 +127,7 @@ namespace Horse.Server
         public void BlockWhileRunning()
         {
             while (IsRunning)
-                Thread.Sleep(100);
+                Thread.Sleep(1000);
         }
 
         /// <summary>
@@ -132,21 +137,13 @@ namespace Horse.Server
         public async Task BlockWhileRunningAsync()
         {
             while (IsRunning)
-                await Task.Delay(250);
-        }
-
-        /// <summary>
-        /// Starts server on a specific port and waits until it stops
-        /// </summary>
-        public void Run()
-        {
-            Run(0);
+                await Task.Delay(1000).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Starts server and waits until it stops
         /// </summary>
-        public void Run(int port)
+        public void Run(int port = 0)
         {
             if (port == 0)
                 Start();
@@ -291,7 +288,7 @@ namespace Horse.Server
         {
             List<IHorseProtocol> list = Protocols.ToList();
 
-            IHorseProtocol old = list.FirstOrDefault(x => x.Name.Equals(protocol.Name, StringComparison.InvariantCultureIgnoreCase));
+            IHorseProtocol old = list.FirstOrDefault(x => x.Name.Equals(protocol.Name, StringComparison.OrdinalIgnoreCase));
             if (old != null)
                 list.Remove(old);
 
@@ -306,10 +303,10 @@ namespace Horse.Server
         {
             foreach (IHorseProtocol protocol in Protocols)
             {
-                if (protocol.Name.Equals(newProtocolName, StringComparison.InvariantCultureIgnoreCase))
+                if (protocol.Name.Equals(newProtocolName, StringComparison.OrdinalIgnoreCase))
                 {
-                    ProtocolHandshakeResult hsresult = await protocol.SwitchTo(info, data);
-                    if (!hsresult.Accepted)
+                    ProtocolHandshakeResult handshakeResult = await protocol.SwitchTo(info, data).ConfigureAwait(false);
+                    if (!handshakeResult.Accepted)
                     {
                         info.Close();
                         return;
@@ -317,18 +314,16 @@ namespace Horse.Server
 
                     IHorseProtocol previous = info.Protocol;
                     info.Protocol = protocol;
-                    info.Socket = hsresult.Socket;
+                    info.Socket = handshakeResult.Socket;
 
-                    if (info.Socket != null)
-                        info.Socket.SetOnConnected();
+                    info.Socket?.SetOnConnected();
 
-                    if (hsresult.Response != null)
-                        await info.GetStream().WriteAsync(hsresult.Response);
+                    if (handshakeResult.Response != null)
+                        await info.GetStream().WriteAsync(handshakeResult.Response).ConfigureAwait(false);
 
-                    if (info.Socket != null)
-                        info.Socket.SetOnProtocolSwitched(previous, info.Protocol);
+                    info.Socket?.SetOnProtocolSwitched(previous, info.Protocol);
 
-                    await protocol.HandleConnection(info, hsresult);
+                    await protocol.HandleConnection(info, handshakeResult).ConfigureAwait(false);
                     return;
                 }
             }
@@ -339,7 +334,7 @@ namespace Horse.Server
         /// </summary>
         public IHorseProtocol FindProtocol(string name)
         {
-            return Protocols.FirstOrDefault(x => x.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+            return Protocols.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
         #endregion

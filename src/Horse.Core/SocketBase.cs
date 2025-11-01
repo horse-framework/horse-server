@@ -55,7 +55,7 @@ namespace Horse.Core
         /// SslStream does not support concurrent write operations.
         /// This semaphore is used to handle that issue
         /// </summary>
-        private SemaphoreSlim _ss;
+        private readonly SemaphoreSlim _ss = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Triggered when the client is connected
@@ -104,9 +104,6 @@ namespace Horse.Core
             IsSsl = info.IsSsl;
             IsConnected = true;
             Stream = info.GetStream();
-
-            if (IsSsl)
-                _ss = new SemaphoreSlim(1, 1);
         }
 
         #endregion
@@ -120,13 +117,8 @@ namespace Horse.Core
         {
             try
             {
-                if (IsSsl)
-                {
-                    Stream.EndWrite(ar);
-                    ReleaseSslLock();
-                }
-                else
-                    Stream.EndRead(ar);
+                Stream.EndWrite(ar);
+                ReleaseSslLock();
             }
             catch
             {
@@ -138,7 +130,7 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
-        public async Task<bool> SendAsync(byte[] data)
+        public async ValueTask<bool> SendAsync(byte[] data)
         {
             try
             {
@@ -149,14 +141,9 @@ namespace Horse.Core
                 }
 
                 if (IsSsl)
-                {
-                    if (_ss == null)
-                        _ss = new SemaphoreSlim(1, 1);
+                    await _ss.WaitAsync().ConfigureAwait(false);
 
-                    await _ss.WaitAsync();
-                }
-
-                await Stream.WriteAsync(data);
+                await Stream.WriteAsync(data).ConfigureAwait(false);
 
                 if (IsSsl)
                     ReleaseSslLock();
@@ -182,18 +169,14 @@ namespace Horse.Core
                     return false;
 
                 if (IsSsl)
-                {
-                    if (_ss == null)
-                        _ss = new SemaphoreSlim(1, 1);
-
                     _ss.Wait();
-                }
 
                 Stream.BeginWrite(data, 0, data.Length, EndWrite, data);
                 return true;
             }
             catch
             {
+                ReleaseSslLock();
                 Disconnect();
                 return false;
             }
@@ -213,24 +196,16 @@ namespace Horse.Core
                 }
 
                 if (IsSsl)
-                {
-                    if (_ss == null)
-                        _ss = new SemaphoreSlim(1, 1);
-
                     _ss.Wait();
-                }
 
                 Stream.BeginWrite(data, 0, data.Length, ar =>
                 {
                     try
                     {
+                        Stream.EndWrite(ar);
+
                         if (IsSsl)
-                        {
-                            Stream.EndWrite(ar);
                             ReleaseSslLock();
-                        }
-                        else
-                            Stream.EndRead(ar);
 
                         sendCallback(true);
                     }
@@ -261,18 +236,18 @@ namespace Horse.Core
         /// <summary>
         /// Releases ssl semaphore 
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ReleaseSslLock()
         {
-            if (!IsSsl)
-                return;
-
-            try
+            if (IsSsl && _ss?.CurrentCount == 0)
             {
-                if (_ss != null && _ss.CurrentCount == 0)
+                try
+                {
                     _ss.Release();
-            }
-            catch
-            {
+                }
+                catch
+                {
+                }
             }
         }
 

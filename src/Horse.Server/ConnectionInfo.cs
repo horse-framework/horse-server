@@ -100,8 +100,7 @@ namespace Horse.Server
                 try
                 {
                     Stream stream = GetStream();
-                    if (stream != null)
-                        stream.Dispose();
+                    stream?.Dispose();
 
                     if (Client != null)
                     {
