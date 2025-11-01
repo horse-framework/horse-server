@@ -43,7 +43,7 @@ namespace Horse.Server.Containers
         /// </summary>
         public IEnumerable<SocketBase> List()
         {
-            List<SocketBase> clients = new List<SocketBase>();
+            List<SocketBase> clients;
 
             lock (Clients)
                 clients = new List<SocketBase>(Clients);

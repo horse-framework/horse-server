@@ -67,15 +67,8 @@ namespace Horse.Server
                     if (_server.Options.QuickAck)
                     {
                         int SIO_TCP_SET_ACK_FREQUENCY = unchecked((int)0x98000017);
-                        var outputArray = ArrayPool<byte>.Shared.Rent(128);
-                        try
-                        {
-                            tcp.Client.IOControl(SIO_TCP_SET_ACK_FREQUENCY, BitConverter.GetBytes(1), outputArray);
-                        }
-                        finally
-                        {
-                            ArrayPool<byte>.Shared.Return(outputArray);
-                        }
+                        byte[] outputArray = new byte[128];
+                        tcp.Client.IOControl(SIO_TCP_SET_ACK_FREQUENCY, BitConverter.GetBytes(1), outputArray);
                     }
 
                     _ = AcceptClient(tcp);
@@ -95,7 +88,7 @@ namespace Horse.Server
         private async Task AcceptClient(TcpClient tcp)
         {
             ConnectionInfo info = null;
-            byte[] protocolBytes = null;
+            byte[] protocolBytes = new byte[ProtocolBufferSize];
 
             try
             {
@@ -125,9 +118,8 @@ namespace Horse.Server
                 }
 
                 //read one byte and recognize the protocol
-                protocolBytes = ArrayPool<byte>.Shared.Rent(ProtocolBufferSize);
                 int rc = await info.GetStream()
-                    .ReadAsync(protocolBytes.AsMemory(0, ProtocolBufferSize))
+                    .ReadAsync(protocolBytes, 0, protocolBytes.Length)
                     .ConfigureAwait(false);
 
                 if (rc == 0)
@@ -168,11 +160,6 @@ namespace Horse.Server
                 info?.Close();
                 _server.RaiseException(ex);
             }
-            finally
-            {
-                if (protocolBytes != null)
-                    ArrayPool<byte>.Shared.Return(protocolBytes);
-            }
         }
 
         /// <summary>
@@ -184,7 +171,7 @@ namespace Horse.Server
                 return;
 
             _listener.Listener.Start();
-            
+
             try
             {
                 _listener.Handle.Interrupt();
