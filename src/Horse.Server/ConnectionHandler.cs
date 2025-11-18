@@ -59,9 +59,23 @@ namespace Horse.Server
 
                 try
                 {
-                    //todo: before tcp accept
+                    IConnectionAcceptHandler acceptHandler = _server.ConnectionAcceptHandler;
+                    if (acceptHandler != null)
+                        await acceptHandler.BeforeAccept(_server, this);
 
                     TcpClient tcp = await _listener.Listener.AcceptTcpClientAsync().ConfigureAwait(false);
+
+                    if (acceptHandler != null)
+                    {
+                        bool accepted = await acceptHandler.AfterAccept(_server, this, tcp);
+                        if (!accepted)
+                        {
+                            tcp.Close();
+                            tcp.Dispose();
+                            continue;
+                        }
+                    }
+
                     tcp.NoDelay = _server.Options.NoDelay;
 
                     if (_server.Options.QuickAck)

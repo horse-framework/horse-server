@@ -33,7 +33,5 @@ namespace Horse.Server
         /// Request keep alive manager for disposing incompleted connections
         /// </summary>
         internal KeepAliveManager KeepAliveManager { get; set; }
-
     }
-
 }

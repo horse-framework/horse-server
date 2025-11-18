@@ -130,7 +130,7 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
-        public async ValueTask<bool> SendAsync(byte[] data)
+        public async Task<bool> SendAsync(byte[] data)
         {
             try
             {
@@ -161,7 +161,7 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
-        public async ValueTask<bool> SendAsync(ReadOnlyMemory<byte> data)
+        public async Task<bool> SendAsync(ReadOnlyMemory<byte> data)
         {
             try
             {

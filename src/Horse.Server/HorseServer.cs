@@ -81,6 +81,11 @@ namespace Horse.Server
         /// Triggered when the server is stopped
         /// </summary>
         public event Action<HorseServer> OnStopped;
+        
+        /// <summary>
+        /// Connection accept handler intercepts new connection requests
+        /// </summary>
+        public IConnectionAcceptHandler ConnectionAcceptHandler { get; set; }
 
         private TaskCompletionSource<object> _runAwaiter;
 
