@@ -192,6 +192,30 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
+        public bool Send(ReadOnlySpan<byte> data)
+        {
+            try
+            {
+                if (Stream == null)
+                    return false;
+
+                if (IsSsl)
+                    _ss.Wait();
+
+                Stream.Write(data);
+                return true;
+            }
+            catch
+            {
+                ReleaseSslLock();
+                Disconnect();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
         public bool Send(byte[] data)
         {
             try
