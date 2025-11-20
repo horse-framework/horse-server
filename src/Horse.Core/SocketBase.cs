@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -55,7 +56,7 @@ namespace Horse.Core
         /// SslStream does not support concurrent write operations.
         /// This semaphore is used to handle that issue
         /// </summary>
-        private readonly SemaphoreSlim _ss = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _ss = new(1, 1);
 
         /// <summary>
         /// Triggered when the client is connected
@@ -192,6 +193,35 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
+        public async Task<bool> SendAsync(ReadOnlySequence<byte> data)
+        {
+            try
+            {
+                if (Stream == null)
+                    return false;
+
+                if (IsSsl)
+                    await _ss.WaitAsync();
+
+                foreach (ReadOnlyMemory<byte> memory in data)
+                    await Stream.WriteAsync(memory).ConfigureAwait(false);
+
+                if (IsSsl)
+                    ReleaseSslLock();
+
+                return true;
+            }
+            catch
+            {
+                ReleaseSslLock();
+                Disconnect();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
         public bool Send(ReadOnlySpan<byte> data)
         {
             try
@@ -203,6 +233,39 @@ namespace Horse.Core
                     _ss.Wait();
 
                 Stream.Write(data);
+                
+                if (IsSsl)
+                    ReleaseSslLock();
+
+                return true;
+            }
+            catch
+            {
+                ReleaseSslLock();
+                Disconnect();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
+        public bool Send(ReadOnlySequence<byte> data)
+        {
+            try
+            {
+                if (Stream == null)
+                    return false;
+
+                if (IsSsl)
+                    _ss.Wait();
+
+                foreach (ReadOnlyMemory<byte> memory in data)
+                    Stream.Write(memory.Span);
+
+                if (IsSsl)
+                    ReleaseSslLock();
+
                 return true;
             }
             catch
@@ -227,6 +290,10 @@ namespace Horse.Core
                     _ss.Wait();
 
                 Stream.BeginWrite(data, 0, data.Length, EndWrite, data);
+                
+                if (IsSsl)
+                    ReleaseSslLock();
+
                 return true;
             }
             catch
@@ -271,6 +338,10 @@ namespace Horse.Core
                         Disconnect();
                     }
                 }, data);
+                
+                if (IsSsl)
+                    ReleaseSslLock();
+
             }
             catch
             {
