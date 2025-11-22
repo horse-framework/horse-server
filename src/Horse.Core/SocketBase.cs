@@ -22,6 +22,8 @@ namespace Horse.Core
     /// </summary>
     public abstract class SocketBase
     {
+        private static ArrayPool<byte> ArrayPool = ArrayPool<byte>.Shared;
+
         #region Properties
 
         /// <summary>
@@ -119,12 +121,15 @@ namespace Horse.Core
             try
             {
                 Stream.EndWrite(ar);
-                ReleaseSslLock();
             }
             catch
             {
-                ReleaseSslLock();
                 Disconnect();
+            }
+            finally
+            {
+                if (IsSsl)
+                    ReleaseNetworkLock();
             }
         }
 
@@ -137,7 +142,7 @@ namespace Horse.Core
             {
                 if (Stream == null || data == null)
                 {
-                    ReleaseSslLock();
+                    ReleaseNetworkLock();
                     return false;
                 }
 
@@ -147,13 +152,13 @@ namespace Horse.Core
                 await Stream.WriteAsync(data).ConfigureAwait(false);
 
                 if (IsSsl)
-                    ReleaseSslLock();
+                    ReleaseNetworkLock();
 
                 return true;
             }
             catch
             {
-                ReleaseSslLock();
+                ReleaseNetworkLock();
                 Disconnect();
                 return false;
             }
@@ -164,29 +169,26 @@ namespace Horse.Core
         /// </summary>
         public async Task<bool> SendAsync(ReadOnlyMemory<byte> data)
         {
+            if (Stream == null)
+                return false;
+
             try
             {
-                if (Stream == null)
-                {
-                    ReleaseSslLock();
-                    return false;
-                }
-
                 if (IsSsl)
-                    await _ss.WaitAsync().ConfigureAwait(false);
+                    await _ss.WaitAsync();
 
-                await Stream.WriteAsync(data).ConfigureAwait(false);
-
-                if (IsSsl)
-                    ReleaseSslLock();
-
+                await Stream.WriteAsync(data);
                 return true;
             }
             catch
             {
-                ReleaseSslLock();
                 Disconnect();
                 return false;
+            }
+            finally
+            {
+                if (IsSsl)
+                    ReleaseNetworkLock();
             }
         }
 
@@ -195,27 +197,36 @@ namespace Horse.Core
         /// </summary>
         public async Task<bool> SendAsync(ReadOnlySequence<byte> data)
         {
+            if (Stream == null)
+                return false;
+
+            byte[] array = ArrayPool.Rent((int)data.Length);
             try
             {
-                if (Stream == null)
-                    return false;
+                int index = 0;
+                foreach (ReadOnlyMemory<byte> memory in data)
+                {
+                    memory.Span.CopyTo(array.AsSpan(index));
+                    index += memory.Length;
+                }
 
                 if (IsSsl)
                     await _ss.WaitAsync();
 
-                foreach (ReadOnlyMemory<byte> memory in data)
-                    await Stream.WriteAsync(memory).ConfigureAwait(false);
-
-                if (IsSsl)
-                    ReleaseSslLock();
-
+                await Stream.WriteAsync(array, 0, (int)data.Length);
                 return true;
             }
             catch
             {
-                ReleaseSslLock();
                 Disconnect();
                 return false;
+            }
+            finally
+            {
+                ArrayPool.Return(array);
+
+                if (IsSsl)
+                    ReleaseNetworkLock();
             }
         }
 
@@ -224,55 +235,26 @@ namespace Horse.Core
         /// </summary>
         public bool Send(ReadOnlySpan<byte> data)
         {
+            if (Stream == null)
+                return false;
+
             try
             {
-                if (Stream == null)
-                    return false;
-
                 if (IsSsl)
                     _ss.Wait();
 
                 Stream.Write(data);
-                
-                if (IsSsl)
-                    ReleaseSslLock();
-
                 return true;
             }
             catch
             {
-                ReleaseSslLock();
                 Disconnect();
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Sends byte array message to the socket client.
-        /// </summary>
-        public bool Send(ReadOnlySequence<byte> data)
-        {
-            try
+            finally
             {
-                if (Stream == null)
-                    return false;
-
                 if (IsSsl)
-                    _ss.Wait();
-
-                foreach (ReadOnlyMemory<byte> memory in data)
-                    Stream.Write(memory.Span);
-
-                if (IsSsl)
-                    ReleaseSslLock();
-
-                return true;
-            }
-            catch
-            {
-                ReleaseSslLock();
-                Disconnect();
-                return false;
+                    ReleaseNetworkLock();
             }
         }
 
@@ -281,26 +263,26 @@ namespace Horse.Core
         /// </summary>
         public bool Send(byte[] data)
         {
+            if (Stream == null || data == null)
+                return false;
+
             try
             {
-                if (Stream == null || data == null)
-                    return false;
-
                 if (IsSsl)
                     _ss.Wait();
 
                 Stream.BeginWrite(data, 0, data.Length, EndWrite, data);
-                
-                if (IsSsl)
-                    ReleaseSslLock();
-
                 return true;
             }
             catch
             {
-                ReleaseSslLock();
                 Disconnect();
                 return false;
+            }
+            finally
+            {
+                if (IsSsl)
+                    ReleaseNetworkLock();
             }
         }
 
@@ -309,14 +291,14 @@ namespace Horse.Core
         /// </summary>
         public void Send(byte[] data, Action<bool> sendCallback)
         {
+            if (Stream == null || data == null)
+            {
+                sendCallback(false);
+                return;
+            }
+
             try
             {
-                if (Stream == null || data == null)
-                {
-                    sendCallback(false);
-                    return;
-                }
-
                 if (IsSsl)
                     _ss.Wait();
 
@@ -325,28 +307,79 @@ namespace Horse.Core
                     try
                     {
                         Stream.EndWrite(ar);
-
-                        if (IsSsl)
-                            ReleaseSslLock();
-
                         sendCallback(true);
                     }
                     catch
                     {
                         sendCallback(false);
-                        ReleaseSslLock();
                         Disconnect();
                     }
+                    finally
+                    {
+                        if (IsSsl)
+                            ReleaseNetworkLock();
+                    }
                 }, data);
-                
-                if (IsSsl)
-                    ReleaseSslLock();
-
             }
             catch
             {
                 sendCallback(false);
                 Disconnect();
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
+        public bool Send(ReadOnlySequence<byte> data)
+        {
+            if (Stream == null)
+                return false;
+
+            byte[] array = ArrayPool.Rent((int)data.Length);
+            try
+            {
+                int index = 0;
+                foreach (ReadOnlyMemory<byte> memory in data)
+                {
+                    memory.Span.CopyTo(array.AsSpan(index));
+                    index += memory.Length;
+                }
+
+                if (IsSsl)
+                    _ss.Wait();
+
+                Stream.BeginWrite(array, 0, (int)data.Length, ar =>
+                {
+                    try
+                    {
+                        Stream.EndWrite(ar);
+                    }
+                    catch
+                    {
+                        Disconnect();
+                    }
+                    finally
+                    {
+                        ArrayPool.Return(array);
+
+                        if (IsSsl)
+                            ReleaseNetworkLock();
+                    }
+                }, array);
+
+                return true;
+            }
+            catch
+            {
+                ArrayPool.Return(array);
+                Disconnect();
+                return false;
+            }
+            finally
+            {
+                if (IsSsl)
+                    ReleaseNetworkLock();
             }
         }
 
@@ -363,9 +396,9 @@ namespace Horse.Core
         /// Releases ssl semaphore 
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ReleaseSslLock()
+        private void ReleaseNetworkLock()
         {
-            if (IsSsl && _ss?.CurrentCount == 0)
+            if (_ss.CurrentCount == 0)
             {
                 try
                 {
@@ -390,11 +423,8 @@ namespace Horse.Core
             {
                 IsConnected = false;
 
-                if (Stream != null)
-                    Stream.Dispose();
-
-                if (Client != null)
-                    Client.Close();
+                Stream?.Dispose();
+                Client?.Close();
 
                 Client = null;
                 Stream = null;

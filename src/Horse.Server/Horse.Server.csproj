@@ -5,9 +5,9 @@
         <Product>Horse.Server</Product>
         <Description>Horse TCP Socket Server</Description>
         <PackageTags>horse,tcp,socket,server</PackageTags>
-        <AssemblyVersion>7.3.3</AssemblyVersion>
-        <FileVersion>7.3.3</FileVersion>
-        <PackageVersion>7.3.3</PackageVersion>
+        <AssemblyVersion>7.3.10</AssemblyVersion>
+        <FileVersion>7.3.10</FileVersion>
+        <PackageVersion>7.3.10</PackageVersion>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Mehmet Helvacıköylü</Authors>
         <PackageProjectUrl>https://github.com/horse-framework/horse-server</PackageProjectUrl>
