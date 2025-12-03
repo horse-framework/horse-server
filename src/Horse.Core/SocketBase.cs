@@ -167,6 +167,37 @@ namespace Horse.Core
         /// <summary>
         /// Sends byte array message to the socket client.
         /// </summary>
+        public async Task<bool> SendAsync(byte[] data, int offset, int count)
+        {
+            try
+            {
+                if (Stream == null || data == null)
+                {
+                    ReleaseNetworkLock();
+                    return false;
+                }
+
+                if (IsSsl)
+                    await _ss.WaitAsync().ConfigureAwait(false);
+
+                await Stream.WriteAsync(data, offset, count).ConfigureAwait(false);
+
+                if (IsSsl)
+                    ReleaseNetworkLock();
+
+                return true;
+            }
+            catch
+            {
+                ReleaseNetworkLock();
+                Disconnect();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
         public async Task<bool> SendAsync(ReadOnlyMemory<byte> data)
         {
             if (Stream == null)
@@ -272,6 +303,34 @@ namespace Horse.Core
                     _ss.Wait();
 
                 Stream.BeginWrite(data, 0, data.Length, EndWrite, data);
+                return true;
+            }
+            catch
+            {
+                Disconnect();
+                return false;
+            }
+            finally
+            {
+                if (IsSsl)
+                    ReleaseNetworkLock();
+            }
+        }
+
+        /// <summary>
+        /// Sends byte array message to the socket client.
+        /// </summary>
+        public bool Send(byte[] data, int offset, int count)
+        {
+            if (Stream == null || data == null)
+                return false;
+
+            try
+            {
+                if (IsSsl)
+                    _ss.Wait();
+
+                Stream.BeginWrite(data, offset, count, EndWrite, data);
                 return true;
             }
             catch
